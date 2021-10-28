@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\api\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
@@ -8,8 +8,9 @@ use App\Models\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-
-class RegisterController extends Controller
+use JWTAuth;
+use Illuminate\Http\Request;
+class RegisterController extends Controller 
 {
     /*
     |--------------------------------------------------------------------------
@@ -23,7 +24,7 @@ class RegisterController extends Controller
     */
 
     use RegistersUsers;
-
+    protected $auth;
     /**
      * Where to redirect users after registration.
      *
@@ -36,9 +37,37 @@ class RegisterController extends Controller
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(JWTAuth $auth)
     {
-        $this->middleware('guest');
+        // $this->middleware('guest');
+        $this->auth=$auth;
+    }
+  /**
+     * Handle a registration request for the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    public function register(Request $request)
+    {
+       $validator= $this->validator($request->all());
+       if(!$validator->fails()){
+        $user = User::create([
+            'name' => $request->get('name'),
+            'email' => $request->get('email'),
+            'password' => Hash::make($request->get('password')),
+        ]);
+           $token=JWTAuth::fromUser($user);
+           return response()->json([
+               'success'=>true,
+               'data'=>$user,
+               'token'=>$token,
+           ],200);
+       }
+       return response()->json([
+           'success'=>false,
+           'errors'=>$validator->errors(),
+       ],422);
     }
 
     /**
@@ -52,7 +81,7 @@ class RegisterController extends Controller
         return Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string'],
         ]);
     }
 
