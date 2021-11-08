@@ -21,4 +21,7 @@ Route::group(['prefix'=>'/auth',['middleware'=>'throttle:20,5']],function(){
 Route::group(['middleware'=>'jwt.auth'], function(){
     Route::get('/me','MeController@index');
     Route::get('/logout','MeController@logout');
+ 
 });
+Route::get('/movies/{page}','MovieController@index');
+Route::get('/movie/{id}', 'MovieController@show');
